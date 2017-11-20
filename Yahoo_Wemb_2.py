@@ -101,7 +101,7 @@ def Word2Vec_score(curr_ques, Cand_ans, IDF, Word_Embs):
             min_indices = np.argmin(Score, axis=1)
 
 
-            max_score1 = Score[:,-20:]   ## taking 3 highest element columns
+            max_score1 = Score# [:,-1000:]   ## taking 3 highest element columns
 
 
             max_score1 = np.matmul(np.transpose(Ques_IDF), max_score1)
