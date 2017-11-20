@@ -34,9 +34,9 @@ print ("len of Vocab embeddings is: ", len(Vocab_Wemb))
 #becky_emb=open("ss_qz_04.dim50vecs.txt","r", encoding='utf-8')
 embeddings_index = {}
 # glove_emb = open('glove.6B.100d.txt','r', encoding='utf-8')
-# f = open('glove.840B.300d.txt','r', encoding='utf-8')
+f = open('glove.840B.300d.txt','r', encoding='utf-8')
 # f = open("GW_vectors.txt", 'r', encoding='utf-8')  ## gives a lot lesser performance.
-f=open("deps.contexts","r", encoding='utf-8')
+
 #f = open('ss_qz_04.dim50vecs.txt')
 for line in f:
     values = line.split()
@@ -53,7 +53,7 @@ print("Embedding size is: ", emb_size)
 
 
 
-IDF_file=open("IDF_file.txt","r")
+IDF_file=open("IDF_file_dev.txt","r")
 for line in IDF_file:
     IDF=ast.literal_eval(line)
     break
@@ -77,25 +77,52 @@ def Ques_Emb(ques1, IDF, embeddings_index):
 
 
 def Word2Vec_score(curr_ques, Cand_ans, IDF, Word_Embs):
-
-    Doc_Score=[0]
-
-
     max_score=0
     min_score=0
+    Cand_ans_score=[]
 
+    threshold_vals = len(curr_ques)  ## math.ceil     math.ceil(0.75 * float()
+    # print("threshold value is: ",threshold_vals)
     Ques_Matrix, Ques_IDF = Ques_Emb(curr_ques, IDF, Word_Embs)
 
+
+
     for cand_a1 in Cand_ans:
-        pass
+        Cand_Matrix, Cand_IDF = Ques_Emb(cand_a1, IDF, Word_Embs)
+        Cand_Matrix = Cand_Matrix.transpose()
+        if Cand_Matrix.size == 0 or Ques_Matrix.size == 0:
+            pass
+        else:
 
+            Score = np.matmul(Ques_Matrix, Cand_Matrix)
+            max_indices = np.argmax(Score, axis=1)
+            min_indices = np.argmin(Score, axis=1)
 
+            max_score = np.amax(Score, axis=1)
+            max_score = np.multiply(np.transpose(Ques_IDF), max_score)
+            max_score1 = np.asarray(max_score).flatten()
+            max_score1 = heapq.nlargest(threshold_vals, max_score1)
+            max_score = (sum(max_score1))
+
+            min_score = np.amin(Score, axis=1)
+            min_score = np.multiply(np.transpose(Ques_IDF), min_score)
+            min_score = np.asarray(min_score).flatten()
+            min_score = heapq.nsmallest(threshold_vals, min_score)  ## threshold=2
+            min_score = (sum(min_score))  # .item(0)
+            total_score = max_score # (min_score)
+            total_score = total_score ## / len(curr_ques)
+            Cand_ans_score.append(total_score)
+    # print("Can scores are: ", Cand_ans_score)
+    Cand_ans_score=np.asarray(Cand_ans_score)
+    predicted_val=np.argmax(Cand_ans_score)
+
+    return predicted_val
 
 
 
 
 import xml.etree.ElementTree as ET
-tree = ET.parse('cqa_questions_yadeep_min4_causal.cqa.train.xml')
+tree = ET.parse('cqa_questions_yadeep_min4_causal.cqa.dev.xml')
 root = tree.getroot()
 
 
@@ -134,7 +161,17 @@ for question in root:
     Cand_ans=[]
     count=0
 
+accuracy=0
+if len(Predicted_ans)!=len(Correct_ans):
+   print("there is a big error somewhere, find it: ")
 
+else:
+   for ind1, pred1 in enumerate(Predicted_ans):
+       if pred1==Correct_ans[ind1]:
+          accuracy+=1
+
+print("accuracy or P@1 is: ",accuracy/float(len(Predicted_ans)))
+print(Correct_ans)
 """
 print (len(Question_set))
 print (len(Candidate_answers))
