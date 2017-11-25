@@ -84,12 +84,16 @@ def Word2Vec_score(curr_ques, Cand_ans, IDF, Word_Embs):
     threshold_vals = len(curr_ques)  ## math.ceil     math.ceil(0.75 * float()
     # print("threshold value is: ",threshold_vals)
     Ques_Matrix, Ques_IDF = Ques_Emb(curr_ques, IDF, Word_Embs)
-
+    cand_len=[]
+    for cand1 in Cand_ans:
+        cand_len.append(len(cand1))
+    threshold=min(cand_len)
 
 
     for cand_a1 in Cand_ans:
         Cand_Matrix, Cand_IDF = Ques_Emb(cand_a1, IDF, Word_Embs)
         Cand_Matrix = Cand_Matrix.transpose()
+        # print(Cand_Matrix.shape[1])
         if Cand_Matrix.size == 0 or Ques_Matrix.size == 0:
             pass
         else:
@@ -101,8 +105,8 @@ def Word2Vec_score(curr_ques, Cand_ans, IDF, Word_Embs):
             min_indices = np.argmin(Score, axis=1)
 
 
-            max_score1 = Score# [:,-1000:]   ## taking 3 highest element columns
-
+            max_score1 = Score [:,-1:]   ## taking 3 highest element columns
+            # print(max_score1)
 
             max_score1 = np.matmul(np.transpose(Ques_IDF), max_score1)
             max_score1 = np.asarray(max_score1).flatten()
@@ -113,8 +117,8 @@ def Word2Vec_score(curr_ques, Cand_ans, IDF, Word_Embs):
             min_score = np.asarray(min_score).flatten()
             min_score = heapq.nsmallest(threshold_vals, min_score)  ## threshold=2
             min_score = (sum(min_score))  # .item(0)
-            total_score = max_score # (min_score)
-            total_score = total_score ## / len(curr_ques)
+            total_score = max_score + (min_score)
+            total_score = total_score # / float(Cand_Matrix.shape[1])
             Cand_ans_score.append(total_score)
     # print("Can scores are: ", Cand_ans_score)
     Cand_ans_score=np.asarray(Cand_ans_score)
@@ -126,7 +130,7 @@ def Word2Vec_score(curr_ques, Cand_ans, IDF, Word_Embs):
 
 
 import xml.etree.ElementTree as ET
-tree = ET.parse('cqa_questions_yadeep_min4_causal.cqa.dev.xml')
+tree = ET.parse('corr_dev.xml')
 root = tree.getroot()
 
 
@@ -169,6 +173,7 @@ for question in root:
 
 
 
+
 accuracy=0
 if len(Predicted_ans)!=len(Correct_ans):
    print("there is a big error somewhere, find it: ")
@@ -181,7 +186,7 @@ else:
 print("accuracy or P@1 is: ",accuracy/float(len(Predicted_ans)))
 print(Correct_ans)
 
-
+print(len(Correct_ans))
 """
 print (len(Question_set))
 print (len(Candidate_answers))
