@@ -71,7 +71,7 @@ for word_key in word_tag_count:
 
 ############################################ Validation Performance
 
-val_file= open("PTBSmall/dev.tagged","r")
+val_file= open("PTBSmall/test.tagged","r")
 prev_vtag="start"
 Gold_val_tag=[]
 Predicted_val_tag=[]
@@ -103,9 +103,8 @@ for vline in val_file:
                emis_prob=1    ##### /(float(Pos_count_dict[pos_lab]+K))          smoothing removed.
                trans_prob=trans_count[prev_vtag+" "+pos_lab]
                possible_tag_score.append(emis_prob*trans_prob)
-
-           #if len(unknown_indices) < 10:
-              #print(possible_tag_score)
+           if len(unknown_indices) < 10:
+              print(possible_tag_score)
            possible_tag_score=np.asarray(possible_tag_score)
            Predicted_val_tag.append(possible_tags[np.argmax(possible_tag_score)])
            prev_vtag = possible_tags[np.argmax(possible_tag_score)]

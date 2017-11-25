@@ -1,4 +1,4 @@
-#############
+############# THis is Ques 2 where we have done smoothing
 
 from collections import Counter
 import numpy as np
@@ -17,9 +17,10 @@ Word_tag_posting={}  ## we need this to determine what all tags does the word ha
 
 prev_tag="start" ## st for start
 word_len=[]
+Error_lines=[]
 for line1 in file1:
     line1=line1.strip()
-    words1=line1.split("\t")
+    words1=line1.split()
     word_len.append(len(words1))
     if len(words1)>1:
        Vocab.append(words1[0])
@@ -38,6 +39,7 @@ for line1 in file1:
     else:
        prev_tag="start"
        POS.append("start")
+       # if len()
 
 Vocab=list(set(Vocab))
 K=len(Vocab)
@@ -79,7 +81,7 @@ unknown_indices=[]
 indices=0
 for vline in val_file:
     vline=vline.strip()
-    vwords=vline.split("\t")
+    vwords=vline.split()
     if len(vwords)<2:
        prev_vtag="start"
     else:
@@ -87,10 +89,10 @@ for vline in val_file:
         Gold_val_tag.append(vwords[1])
 
         if vwords[0] in Vocab:
-           possible_tags=Word_tag_posting[vwords[0]]
+           possible_tags=Word_tag_posting[vwords[0]]  ### now if we are smoothing, even if word is known, we still need to consider all possibilities for tags
            possible_tag_score=[]
            for pt1 in possible_tags:
-               emis_prob = (word_tag_count[vwords[0]+" "+pt1]) #+1) / float((Pos_count_dict[pt1] + K))
+               emis_prob = (word_tag_count[vwords[0]+" "+pt1]) #  +1) / float((Pos_count_dict[pt1] + K))
                possible_tag_score.append(trans_count[prev_vtag+" "+pt1] * emis_prob)
 
            possible_tag_score=np.asarray(possible_tag_score)
