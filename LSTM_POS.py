@@ -1,7 +1,7 @@
 from keras.models import Sequential
 import numpy as np
 from keras.layers.recurrent import LSTM
-from keras.layers.core import TimeDistributedDense, Activation
+#from keras.layers.core import TimeDistributedDense, Activation
 from keras.preprocessing.sequence import pad_sequences
 from keras.layers.embeddings import Embedding
 from keras.layers import Merge
@@ -12,7 +12,7 @@ import os
 import unicodedata
 
 Train_file="PTBSmall/train.tagged"
-Test_file="PTBSmall/test.tagged"
+Test_file="PTBSmall/dev.tagged"
 
 #############################################################################################3
 def Max_Val_Cal(Doc1):
@@ -20,9 +20,9 @@ def Max_Val_Cal(Doc1):
     all_x = []
     point = []
     for line in raw:
-        stripped_line = line.strip().split(' ')
+        stripped_line = line.strip().split()
         point.append(stripped_line)
-        if line == '\n':
+        if line == '\n' or len(stripped_line)<2:
            all_x.append(point[:-1])
            point = []
     lengths = [len(x) for x in all_x]
@@ -41,8 +41,9 @@ all_x = []
 point = []
 for line in raw:
     stripped_line = line.strip().split()
-    point.append(stripped_line)
-    if line == '\n':
+    if len(stripped_line)>1:
+        point.append(stripped_line)
+    else:
        all_x.append(point[:-1])
        point = []    
     
@@ -58,7 +59,8 @@ labels = list(set([c for x in y for c in x]))
 
 label2ind = {label: (index) for index, label in enumerate(labels)}
 ind2label = {(index): label for index, label in enumerate(labels)}
-    
+
+print ("label 2 ind length is : ", len(label2ind))
 
 def encode(x, n):
     result = np.zeros(n)
@@ -87,9 +89,10 @@ point = []
 Words_inLines=[]
 for line in raw:
     stripped_line = line.strip().split()
-    point.append(stripped_line)
-    if line == '\n':
-       Words_inLines.append(len(point)-1)  ## -1 because we are counting blank line as an element in the list. So for removing it, -1 is required.
+    if len(stripped_line) > 1:
+        point.append(stripped_line)
+    else:
+       Words_inLines.append(len(point))
        all_x.append(point[:-1])
        point = []    
     
@@ -131,9 +134,8 @@ print ("last label value is: ",LastLabelIndex)
 X_enc_test = [[words1_2ind[c] for c in x] for x in X_t]
 
 y_enc_t = [[label2ind[c] for c in ey] for ey in y_t]
-y_enc_t = [[encode(c, max_label) for c in ey] for ey in y_enc_t]
-y_enc_t = pad_sequences(y_enc_t, maxlen=maxlen)
-
+y_enc_t1 = [[encode(c, max_label) for c in ey] for ey in y_enc_t]
+y_enc_t2 = pad_sequences(y_enc_t1, maxlen=maxlen)
 
 X_test_f = pad_sequences(X_enc_test, maxlen=maxlen)
 
@@ -184,22 +186,33 @@ batch_size = 32
 model_forward.summary()
 
 # model.fit(X, Y, validation_split=0.33, nb_epoch=150, batch_size=10, validation_split=0.15, callbacks=callbacks_list, verbose=0)
-
-model_forward.fit(X_train_f, y_train, batch_size=batch_size, nb_epoch=20) #5  #,Case_enc_train
-model_forward.save_weights("abc_glove.txt")
+Epoch_nums=5
+model_forward.fit(X_train_f, y_train, batch_size=batch_size, nb_epoch=Epoch_nums) #5  #,Case_enc_train
+model_forward.save_weights("abc_glove_dev_"+str(Epoch_nums)+".txt")
 #model_forward.load_weights("abc.txt", by_name=False)
 # score1 = model_forward.evaluate(X_test_f, y_test, batch_size=batch_size)
 
 pr = model_forward.predict_classes(X_test_f)
 
-yh = y_enc_t.argmax(2)
 
-thefile = open('PredFile_glove', 'w')
+yh = y_enc_t2.argmax(2)
 
+thefile = open('PredFile_glove_dev_'+str(Epoch_nums), 'w')
+Accuracy=0
+Total_tags=0
 for i in range(len(Words_inLines)):
     pred=pr[i][-Words_inLines[i]:]
-    for pred_val in pred:
+    gold_tag=y_enc_t[i]
+    if len(pred)!= len(gold_tag):
+       print ("there is a mismatch of the tag, check the last sentence as it always creates some issue with this format")
+    for pind,pred_val in enumerate(pred):
+        Total_tags+=1
         thefile.write("%s\n" %ind2label[pred_val])
-    thefile.write("\n")    
+        if pred_val==gold_tag[pind]:
+           Accuracy+=1
 
+
+    thefile.write("\n")
+
+print ("the accuracy for :  "+ str(Epoch_nums) + "is : ", Accuracy/float(Total_tags))
 
